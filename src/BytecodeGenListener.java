@@ -157,9 +157,9 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 
 		newTexts.put(ctx,stmt);
 			// <(1) Fill here!>
-		/*반복문 라벨을 하나 두고 expr을 실행하여 나오는 논리값을 비교하여 0이면 조건에 맞지 않으므로 루프를 빠져나가고
-		* 1이면  조건에 맞으므로 thenstmt를 실행한다. 그 뒤 goto문을 이용해 다시 반복문 라벨로 가서 비교를 수행한다.*/
-	}
+	/*반복문 라벨을 하나 두고 expr을 실행하여 나오는 논리값을 비교하여 0이면 조건에 맞지 않으므로 루프를 빠져나가고
+	 * 1이면  조건에 맞으므로 thenstmt를 실행한다. 그 뒤 goto문을 이용해 다시 반복문 라벨로 가서 비교를 수행한다.*/
+}
 	
 	
 	@Override
@@ -286,7 +286,7 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 	public void exitReturn_stmt(Return_stmtContext ctx) {
 		String reText = "";
 		if(BytecodeGenListenerHelper.isIntReturn(ctx)){
-			reText = "iload_"+ symbolTable.getVarId(ctx.getChild(1).getText())+"\n"+"ireturn"+"\n"+".end method"+"\n\n";
+			reText = newTexts.get(ctx.expr())+"\n"+"ireturn"+"\n"+".end method"+"\n\n";
 		}
 		newTexts.put(ctx, reText);
 			// <(4) Fill here>
@@ -309,16 +309,18 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 					expr += "iload_" + symbolTable.getVarId(idName) + " \n";
 				}
 				else if(symbolTable.getVarType(idName) == SymbolTable.Type.INTARRAY){
+					// 심볼 테이블에 저장할때 INTARRAY 타입으로 저장이 됬으므로
+					// id의 타입이 배열인지 확인 한다.
 					expr += "aload_"+symbolTable.getVarId(idName)+ " \n";
-				}
-				//else	// Type int array => Later! skip now..
+				} // aload를 통해 만든 배열을 불러와준다.
 				//	expr += "           lda " + symbolTable.get(ctx.IDENT().getText()).value + " \n";
 				} else if (ctx.LITERAL() != null) {
 					String literalStr = ctx.LITERAL().getText();
 					expr += "ldc " + literalStr + " \n";
 				}
-			} else if(ctx.getChildCount() == 2) { // UnaryOperation
-			expr = handleUnaryExpr(ctx, newTexts.get(ctx) + expr);			
+			}
+		else if(ctx.getChildCount() == 2) { // UnaryOperation
+			expr = handleUnaryExpr(ctx, expr);
 		}
 		else if(ctx.getChildCount() == 3) {	 
 			if(ctx.getChild(0).getText().equals("(")) { 		// '(' expr ')'
@@ -341,8 +343,9 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 				expr += "aload_"+symbolTable.getVarId(ctx.IDENT().getText())+"\n"
 					+ newTexts.get(ctx.expr(0))
 					+ "iaload \n";
-				// expr
-				// Arrays: TODO  
+				// [ 우선 해당 배열을 aload를 통해 불러 준 뒤
+				// 안의 expr을 계산하여 스택에 넣어준다. 그 다음
+				// iaload 명령어를 통해 aload로 불러들인 배열과 expr연산 결과 값을 꺼내어 해당 인덱스의 값을 부른다.]
 			}
 		}
 		// IDENT '[' expr ']' '=' expr
@@ -351,6 +354,10 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 					+ newTexts.get(ctx.expr(0))
 					+ newTexts.get(ctx.expr(1))
 					+ "iastore \n";
+			// 우선 해당 배열을 불러 준뒤. index값의 expr 연산을 수행한ㄴ다.
+			// 그 뒤 입력해야할 expr 연산을 수행한다.
+			// 그러면 스택에 해당 배열, 인덱스 값, 대입값이 쌓이게 되는데
+			// iastore 를 통하여 스택에 쌓인 이 세값을 꺼네어 저장을 수행한다.
 		}
 		newTexts.put(ctx, expr);
 	}
@@ -363,8 +370,8 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 		
 		expr += newTexts.get(ctx.expr(0));
 		switch(ctx.getChild(0).getText()) {
-		case "-":
-				expr += "           ineg \n"; break;
+			case "-":
+				expr += "           ineg \n";break;
 			case "--":
 				expr += "ldc 1" + "\n"
 						+ "isub" + "\n"
@@ -372,9 +379,9 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 				break;
 			case "++":
 				expr += "ldc 1" + "\n"
-						+ "iadd" + "\n"
-						+ "istore_" + symbolTable.getVarId(ctx.getChild(1).getText()) + "\n";
-				break;
+					+ "iadd" + "\n"
+					+ "istore_" + symbolTable.getVarId(ctx.getChild(1).getText()) + "\n";
+			break;
 			case "!":
 				expr += "ifeq " + l2 + "\n"
 						+ l1 + ": " + "ldc 0" + "\n"
@@ -411,7 +418,7 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 						+ "ifeq "+ l2 + "\n"
 						+ "ldc 0" + "\n"
 						+ "goto " + lend + "\n"
-						+ l2 + ": " + "ldc 1" + "\n"
+						+ l2 + ": "+ "\n" + "ldc 1" + "\n"
 						+ lend + ": " + "\n";
 				break;
 			case "!=":
@@ -419,15 +426,15 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 						+ "ifne "+ l2+ "\n"
 						+ "ldc 0" + "\n"
 						+ "goto " + lend + "\n"
-						+ l2 + ": " + "ldc 1" + "\n"
+						+ l2 + ": "+ "\n" + "ldc 1" + "\n"
 						+ lend + ": " + "\n";
 				break;
 			case "<=":
 				expr += "isub " + "\n"
-						+ "ifle" + l2 + "\n"
+						+ "ifle " + l2 + "\n"
 						+ "ldc 0" + "\n"
-						+ "goto" + lend +"\n"
-						+ l2 + ": " + "ldc 1" + "\n"
+						+ "goto " + lend +"\n"
+						+ l2 + ": "+ "\n" + "ldc 1" + "\n"
 						+ lend + ": " + "\n";
 
 				// <(5) Fill here>
@@ -437,10 +444,10 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 				break;
 			case "<":
 				expr += "isub" + "\n"
-						+ "iflt" + l2 +"\n"
+						+ "iflt " + l2 +"\n"
 						+ "ldc 0" + "\n"
-						+ "goto"+lend+"\n"
-						+ l2 + ": " + "ldc 1" + "\n"
+						+ "goto "+lend+"\n"
+						+ l2 + ": "+ "\n" + "ldc 1" + "\n"
 						+ lend + ": " + "\n";
 				// <(6) Fill here>
 				break;
@@ -449,10 +456,10 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 
 			case ">=":
 				expr += "isub"+"\n"
-						+ "ifge" + l2 + "\n"
+						+ "ifge " + l2 + "\n"
 						+ "ldc 0" + "\n"
-						+ "goto" + lend + "\n"
-						+ l2 + ": " + "ldc 1" + "\n"
+						+ "goto " + lend + "\n"
+						+ l2 + ": "+ "\n" + "ldc 1" + "\n"
 						+ lend + ": " + "\n";
 				// <(7) Fill here>
 				/* 이번에는 양수또는 0이 나와야 왼쪽피연산자가 0과 같거나 크므로 ifge를 이용한다
@@ -462,9 +469,9 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 
 			case ">":
 				expr += "isub"+"\n"
-						+ "ifgt"+ l2 + "\n"
+						+ "ifgt "+ l2 + "\n"
 						+ "ldc 0" +"\n"
-						+ "goto" + lend + "\n"
+						+ "goto " + lend + "\n"
 						+ l2 + ": " + "ldc 1" + "\n"
 						+ lend + ": " + "\n";
 
