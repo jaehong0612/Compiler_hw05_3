@@ -202,7 +202,7 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 			String vld = symbolTable.getVarId(ctx);
 			varDecl +=  "aload_0" + "\n"
 					+ "ldc " + ctx.LITERAL().getText() + "\n"
-					+ "putfield " + "	#"+ symbolTable.getVarId(varName) + "\n";
+					+ "putfield " + "	Test/"+ varName + " I" + "\n";
 			// v. initialization => Later! skip now..: 
 		}
 		else if(BytecodeGenListenerHelper.isArrayDecl(ctx)){
@@ -210,7 +210,7 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 			varDecl += "aload_0" + "\n"
 					+ "bipush " + ctx.LITERAL().getText() + "\n"
 					+ "newarray" + "	int" + "\n"
-					+ "putfield" + "	#"+ symbolTable.getVarId(varName) + "\n";
+					+ "putfield" + "	Test/"+ varName + " [I"+ "\n";
 		}
 
 		newTexts.put(ctx, varDecl);
