@@ -1,11 +1,11 @@
-
-
+int a = 10;
+int arrayA[7];
 void main(){
     int array[10];
-    int a = 0;
-    while(a < 10){
-    array[a] = a;
-    _print(a[1]);
-    ++a;
+    int b = 0;
+    while(b < 10){
+    array[b] = b;
+    _print(array[1]);
+    ++b;
     }
 }

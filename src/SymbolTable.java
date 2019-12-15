@@ -58,6 +58,10 @@ public class SymbolTable {
 		_tempVarID = 32;
 
 	}
+
+	public int globalSize(){
+		return _gsymtable.size();
+	}
 	
 	void putLocalVar(String varname, Type type){
 		_lsymtable.put(varname,new VarInfo(type,_localVarID++));

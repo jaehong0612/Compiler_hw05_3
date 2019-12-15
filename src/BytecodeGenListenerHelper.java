@@ -128,7 +128,6 @@ public class BytecodeGenListenerHelper {
 	}
 	
 	static String getFunProlog() {
-
 		StringBuffer stringBuffer = new StringBuffer();
 		stringBuffer.append(".class public Test");
 		stringBuffer.append(System.getProperty("line.separator"));
@@ -142,11 +141,11 @@ public class BytecodeGenListenerHelper {
 		stringBuffer.append(System.getProperty("line.separator"));
 		stringBuffer.append("invokenonvirtual java/lang/Object/<init>()");
 		stringBuffer.append(System.getProperty("line.separator"));
-		stringBuffer.append("return");
+		/*stringBuffer.append("return");
 		stringBuffer.append(System.getProperty("line.separator"));
 		stringBuffer.append(".end method");
 		stringBuffer.append(System.getProperty("line.separator"));
-		stringBuffer.append(System.getProperty("line.separator"));
+		stringBuffer.append(System.getProperty("line.separator"));*/
 		return stringBuffer.toString();
 		// return ".class public Test .....
 		// ...

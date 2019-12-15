@@ -80,8 +80,11 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 			else
 				var_decl += newTexts.get(ctx.decl(i));
 		}
-		
-		newTexts.put(ctx, classProlog + var_decl + fun_decl);
+
+		String classPrologEnd = "return"+"\n"
+				+ ".end method"+ "\n" + "\n";
+		// 전역변수 선언 뒤 프롤로그를 마무리 해주는 코드 추가
+		newTexts.put(ctx, classProlog + var_decl + classPrologEnd + fun_decl);
 		
 		System.out.println(newTexts.get(ctx));
 	}	
@@ -196,9 +199,20 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 		String varDecl = "";
 		
 		if (BytecodeGenListenerHelper.isDeclWithInit(ctx)) {
-			varDecl += "putfield " + varName + "\n";  
+			String vld = symbolTable.getVarId(ctx);
+			varDecl +=  "aload_0" + "\n"
+					+ "ldc " + ctx.LITERAL().getText() + "\n"
+					+ "putfield " + "	#"+ symbolTable.getVarId(varName) + "\n";
 			// v. initialization => Later! skip now..: 
 		}
+		else if(BytecodeGenListenerHelper.isArrayDecl(ctx)){
+			String ArrayId = symbolTable.getVarId(ctx);
+			varDecl += "aload_0" + "\n"
+					+ "bipush " + ctx.LITERAL().getText() + "\n"
+					+ "newarray" + "	int" + "\n"
+					+ "putfield" + "	#"+ symbolTable.getVarId(varName) + "\n";
+		}
+
 		newTexts.put(ctx, varDecl);
 	}
 	
@@ -213,10 +227,10 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 					+ "istore_" + vId + "\n"; 			
 		}
 		else if(BytecodeGenListenerHelper.isArrayDecl(ctx)){
-			String ArrayId = symbolTable.getVarId(ctx);
-			varDecl += "bipush " + ctx.LITERAL().getText() + "\n"
-					+ "newarray" + "	int" + "\n"
-					+ "astore_" + ArrayId +"\n";
+				String ArrayId = symbolTable.getVarId(ctx);
+				varDecl += "bipush " + ctx.LITERAL().getText() + "\n"
+						+ "newarray" + "	int" + "\n"
+						+ "astore_" + ArrayId +"\n";
 		}
 		newTexts.put(ctx, varDecl);
 	}
@@ -379,8 +393,8 @@ public class BytecodeGenListener extends MiniCBaseListener implements ParseTreeL
 				break;
 			case "++":
 				expr += "ldc 1" + "\n"
-					+ "iadd" + "\n"
-					+ "istore_" + symbolTable.getVarId(ctx.getChild(1).getText()) + "\n";
+						+ "iadd" + "\n"
+						+ "istore_" + symbolTable.getVarId(ctx.getChild(1).getText()) + "\n";
 			break;
 			case "!":
 				expr += "ifeq " + l2 + "\n"
